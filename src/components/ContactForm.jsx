@@ -1,8 +1,10 @@
 import css from "./ContactForm.module.css";
 import { Formik, Form, Field, ErrorMessage } from "formik";
 import * as Yup from "yup";
-import { useDispatch } from "react-redux";
-import { addContact } from "../redux/contactsOps";
+import { useDispatch, useSelector } from "react-redux";
+import { addContact } from "../redux/contacts/operations";
+import { selectContacts } from "../redux/contacts/selectors";
+import toast from "react-hot-toast";
 
 const phoneRegExp = /^(?!-)(\d+[-]?)*\d{1,}$(?<!-)$/;
 
@@ -20,9 +22,36 @@ const ContactSchema = Yup.object({
 
 const ContactForm = () => {
   const dispatch = useDispatch();
+  const contacts = useSelector(selectContacts);
 
   const handleSubmit = (values, { resetForm }) => {
-    dispatch(addContact(values));
+    const contact = { ...values };
+
+    const existingContact = contacts.find(
+      (c) => c.name.toLowerCase() === contact.name.toLowerCase()
+    );
+
+    if (existingContact) {
+      toast.error(`${contact.name} is already in contacts.`, {
+        duration: 2500,
+        position: "top-center",
+      });
+      return;
+    }
+    dispatch(addContact(values))
+      .unwrap()
+      .then(() => {
+        toast.success("Contact added!", {
+          duration: 2500,
+          position: "top-center",
+        });
+      })
+      .catch(() => {
+        toast.error("Failed to add contact. Please try again.", {
+          duration: 2500,
+          position: "top-center",
+        });
+      });
     resetForm();
   };
 
